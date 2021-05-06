@@ -1,0 +1,13 @@
+[Unit]
+Description=Session Recording Service
+After=multi-user.target
+Conflicts=getty@tty1.service
+
+[Service]
+Type=simple
+ExecStart=/opt/anaconda3/bin/python /home/HCCLTBRNET/administrator/Documents/session_recording/session_recording_mgmt.py
+KillMode=process
+StandardInput=tty-force
+
+[Install]
+WantedBy=multi-user.target
