@@ -70,11 +70,16 @@ class RecordingSession:
 
 class SessionRecordingManager:
     def __init__(self):
-        self.users: List[str] = [] # all users that should be monitored
         self.users_active: List[str] = [] # users with active citrix session
         self.sessions: Dict[str, RecordingSession] = {}
         self.killer:GracefulKiller = GracefulKiller()
 
+    def dispose(self):
+        '''
+        Execute this method before the *run* exits
+        '''
+        for _u, _session in self.sessions.items():
+            _session.stop()
 
     def run(self):
         '''
@@ -134,8 +139,7 @@ class SessionRecordingManager:
 
             # check killer
             if self.killer.kill_now:
-                for _u, _session in self.sessions.items():
-                    _session.stop()
+                self.dispose()
                 break
 
             # For debugging only
@@ -150,6 +154,13 @@ class SessionRecordingManager:
 
 
 if __name__ == "__main__":
-    srm: SessionRecordingManager = SessionRecordingManager()
-    srm.run()
+    import traceback
+    try:
+        srm: SessionRecordingManager = SessionRecordingManager()
+        srm.run()
+    except Exception as e:
+        srm.dispose()
+        with open(LOG_FILEPATH, "a") as f:
+            f.write(str(e))
+            f.write(traceback.format_exc())
     
