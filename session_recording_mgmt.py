@@ -127,13 +127,28 @@ class SessionRecordingManager:
 
             # load active recording sessions
             # self.users_active = ["peter"] # This is for testing ONLY
-            displays:Dict[str, int] = get_display(self.users_active)
+            displays:Dict[str, int] = get_displays_by_who(self.users_active)
+            # find out those who do not exist in "who"
+            _users_should_further_search: List[str] = []
             for _u in self.users_active:
-                if _u not in self.sessions:
-                    # start to monitor _u
-                    _session = RecordingSession(_u, displays[_u])
-                    _session.start()
-                    self.sessions[_u] = _session
+                if _u not in displays:
+                    _users_should_further_search.append(_u)
+            # find DISPLAY further
+            if len(_users_should_further_search) > 0:
+                displays_further: Dict[str, int] = get_displays_by_gnome_proc(_users_should_further_search)
+                for _u, _d in displays_further.items():
+                    if _d > 0:
+                        displays[_u] = _d
+            
+            for _u in self.users_active:
+                if _u in displays:
+                    if _u not in self.sessions:
+                        # start to monitor _u
+                        _session = RecordingSession(_u, displays[_u])
+                        _session.start()
+                        self.sessions[_u] = _session
+                else:
+                    logger.warning("%s has active citrix session, but cannot find its DISPLAY", _u)
 
             time.sleep(INTERVAL_OF_MANAGER_MAIN_LOOP_SEC)
 
@@ -158,9 +173,14 @@ if __name__ == "__main__":
     try:
         srm: SessionRecordingManager = SessionRecordingManager()
         srm.run()
-    except Exception as e:
-        srm.dispose()
-        with open(LOG_FILEPATH, "a") as f:
-            f.write(str(e))
-            f.write(traceback.format_exc())
-    
+    except Exception:
+        logger.exception("Try to catpure all exceptions when running session recording")
+        from emailing import send_email
+        receivers = ["tristan_wyl@cuhk.edu.hk"]
+        title = "[NO REPLY] Session Recording exited"
+        content = "Please refer to the log file for more details!"
+        send_email(receivers, title, content)
+        try:
+            srm.dispose()
+        except:
+            logger.exception("Session Recording manager dispose exception")

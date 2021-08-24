@@ -1,4 +1,5 @@
 import os
+import logging
 
 # how long of the recordings will be saved, which means the recordings produced earlier will be removed
 PRESERVE_DAY = 7
@@ -22,3 +23,5 @@ RECORDING_DIR = "/media/storage-ssd/SessionRecording/"
 
 # Log file path
 LOG_FILEPATH = os.path.dirname(__file__) + os.sep + "log.txt"
+# log level
+LOG_LEVEL = logging.INFO
